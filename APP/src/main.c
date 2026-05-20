@@ -139,19 +139,19 @@ int main(void)
 	 * Initialization:
 	 * =======================
 	 */
-  WDOG_disable();		  /* Disable WDOG */
-  PORT_init();            /* Configure ports */
-  SOSC_init_8MHz();       /* Initialize system oscilator for 8 MHz xtal */
-  SPLL_init_160MHz();     /* Initialize SPLL to 160 MHz with 8 MHz SOSC */
-  NormalRUNmode_80MHz();  /* Init clocks: 80 MHz sysclk & core, 40 MHz bus, 20 MHz flash */
-  LPIT0_init();           /* Initialize PIT0 for 1 second timeout  */
-  LPUART1_init(); 		  /* Initialize LPUART: 9600 baud, 1 stop bit, 8 bit format, no parity */
-  FLEXCAN0_init();        /* Init FlexCAN0 */ // 单独仿真 APP 时恢复调用，验证升级功能时请注释掉
-  uds_init();
-  InitFlash();
+	WDOG_disable();		  /* Disable WDOG */
+	PORT_init();            /* Configure ports */
+	SOSC_init_8MHz();       /* Initialize system oscilator for 8 MHz xtal */
+	SPLL_init_160MHz();     /* Initialize SPLL to 160 MHz with 8 MHz SOSC */
+	NormalRUNmode_80MHz();  /* Init clocks: 80 MHz sysclk & core, 40 MHz bus, 20 MHz flash */
+	LPIT0_init();           /* Initialize PIT0 for 1 second timeout  */
+	LPUART1_init(); 		  /* Initialize LPUART: 9600 baud, 1 stop bit, 8 bit format, no parity */
+	//FLEXCAN0_init();        /* Init FlexCAN0 */ // 单独仿真 APP 时恢复调用，验证升级功能时请注释掉
+	uds_init();
+	InitFlash();
 
-  LPUART1_transmit_string("APP Init OK.\r\n");
-  LPUART1_transmit_string("---[TEST]---\r\n");
+	LPUART1_transmit_string("APP Init OK.\r\n");
+	LPUART1_transmit_string("---[TEST]---\r\n");
 
 	/*!
 	 * Infinite for:
