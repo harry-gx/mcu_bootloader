@@ -3,7 +3,7 @@
 * 内容摘要: UDS 协议栈 TP 层私有头文件，基于 ISO 15765-2
 * 创建者の: 孔佳伟
 * 个人主页: https://gitee.com/openes
-* 修改记录: 
+* 修改记录:
 ******************************************************************************/
 
 #ifndef _UDS_TP_PRIVATE_H_
@@ -48,7 +48,7 @@ typedef enum __NETWORK_FLOW_STATUS__
 // // 填充值，如果发送的有效数据不满一帧，则用该值填充
 // #define PADDING_VAL                 (0x55)
 
-// 设置帧类型为单帧 
+// 设置帧类型为单帧
 #define NT_SET_PCI_TYPE_SF(low)     (0x00 | (low & 0x0f))
 
 // 设置帧类型为首帧
@@ -74,7 +74,7 @@ typedef enum __NETWORK_FLOW_STATUS__
 #define NT_XMIT_FC_BS               (0)
 
 // 通知发送方发送连续帧的帧间隔最小时间，单位: ms
-#define NT_XMIT_FC_STMIN            (0x0A)
+#define NT_XMIT_FC_STMIN            (0x00)
 
 // 接收方收到连续帧间隔时间不能大于 TIMEOUT_N_CR，单位: ms
 #define TIMEOUT_N_CR                (1000)

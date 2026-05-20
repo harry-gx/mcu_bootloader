@@ -19,10 +19,10 @@ int main(void)
     COM_DeviceInit();
 
     /* UDS初始化 */
-    uds_init();
+    UDS_Init();
 
     /* 初始化 Boot 状态机上下文 */
-    BootSm_Init(&boot_ctx);
+    BSM_Init(&boot_ctx);
 
     printf("\033[2J\033[H");
     printf("---[TEST][main]---\r\n");
@@ -30,19 +30,19 @@ int main(void)
     for (;;)
     {
     	/* 执行一次主循环计数 */
-    	OnceMainLoopCnt();
+    	UDS_MainLoopCnt();
 
         /* 高频轮询通信接收 */
-    	uds_recv_frame();
+    	UDS_RecvFrame();
 
         /* 1ms 周期任务(UDS服务) */
-        if (TRUE == BOOT_PortTake1msTick())
+        if (TRUE == BSM_Take1msTick())
         {
         	/* 执行UDS周期任务 */
-        	uds_1ms_task();
+        	UDS_1MsTask();
 
             /* 执行一次状态机步进 */
-            BootSm_RunStep(&boot_ctx);
+        	BSM_RunStep(&boot_ctx);
         }
     }
 }

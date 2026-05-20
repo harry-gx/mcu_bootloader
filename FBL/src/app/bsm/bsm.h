@@ -9,24 +9,13 @@
 #include "std_type.h"
 
 /*
- * 枚举名称: boot_mode_t
- * 功能说明: Boot 运行模式（语义视图）
- */
-typedef enum
-{
-    BOOT_MODE_NORMAL = 0,
-    BOOT_MODE_UPDATE,
-    BOOT_MODE_RECOVERY,
-    BOOT_MODE_ERROR
-} boot_mode_t;
-
-/*
  * 枚举名称: boot_state_t
  * 功能说明: Boot 状态机主状态
  */
 typedef enum
 {
-    BOOT_STATE_CHECK_FLAG = 0,
+	BOOT_STATE_CHECK_RECOVERY = 0,
+    BOOT_STATE_CHECK_FLAG,
     BOOT_STATE_CHECK_APP,
     BOOT_STATE_WAIT_UPDATE,
     BOOT_STATE_PROGRAMMING,
@@ -42,6 +31,7 @@ typedef enum
 typedef enum
 {
     BOOT_EVT_NONE = 0,
+    BOOT_EVT_RECOVERY_YES,
     BOOT_EVT_FLAG_SET,
     BOOT_EVT_FLAG_CLEAR,
     BOOT_EVT_APP_VALID,
@@ -63,18 +53,37 @@ typedef enum
  */
 typedef struct
 {
-    boot_state_t state;           /* 当前状态 */
-    boot_mode_t mode;             /* 当前模式（由状态派生） */
-    uint32_bl error_code;          /* 当前错误码 */
+    boot_state_t state;   /* 当前状态 */
+    uint32_bl error_code; /* 当前错误码 */
 
-    uint32_bl update_flag;         /* 升级标志缓存 */
-    uint32_bl app_valid;           /* APP 有效标记 */
+    uint32_bl update_flag; /* 升级标志缓存 */
+    uint32_bl app_valid;   /* APP 有效标记 */
 
-    uint32_bl wait_tick;           /* 等待计数 */
-    uint32_bl wait_timeout_tick;   /* 等待超时阈值 */
+    uint32_bl wait_tick;         /* 等待计数 */
+    uint32_bl wait_timeout_tick; /* 等待超时阈值 */
 } boot_context_t;
 
-void BootSm_Init(boot_context_t *ctx);
-void BootSm_RunStep(boot_context_t *ctx);
+typedef boot_event_t (*boot_state_action_t)(boot_context_t *ctx);
+
+/*
+ * 结构体名称: boot_state_action_entry_t
+ * 功能说明: 状态动作表项（state -> action）
+ */
+typedef struct
+{
+    boot_state_t state;         /* 当前状态 */
+    boot_state_action_t action; /* 对应动作函数 */
+} boot_state_action_entry_t;
+
+/*
+ * 结构体名称: boot_transition_t
+ * 功能说明: 状态转移表项（state + event -> next_state）
+ */
+typedef struct
+{
+    boot_state_t current_state; /* 当前状态 */
+    boot_event_t event;         /* 当前事件 */
+    boot_state_t next_state;    /* 下一状态 */
+} boot_transition_t;
 
 #endif

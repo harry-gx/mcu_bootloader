@@ -1,58 +1,12 @@
-#include "bsm.h"
-
 /*
  * 文件名称: boot_sm.c
  * 文件说明: Boot 状态机核心实现（动作表 + 转移表）
  */
 
+#include "bsm.h"
 #include "bsm_cfg.h"
 #include "bsm_port.h"
-
-typedef boot_event_t (*boot_state_action_t)(boot_context_t *ctx);
-
-/*
- * 结构体名称: boot_state_action_entry_t
- * 功能说明: 状态动作表项（state -> action）
- */
-typedef struct
-{
-    boot_state_t state;            /* 当前状态 */
-    boot_state_action_t action;    /* 对应动作函数 */
-} boot_state_action_entry_t;
-
-/*
- * 结构体名称: boot_transition_t
- * 功能说明: 状态转移表项（state + event -> next_state）
- */
-typedef struct
-{
-    boot_state_t current_state;    /* 当前状态 */
-    boot_event_t event;            /* 当前事件 */
-    boot_state_t next_state;       /* 下一状态 */
-} boot_transition_t;
-
-/*
- * 函数名称: BootSm_ModeFromState
- * 功能说明: 根据状态派生模式，避免 mode/state 双真相漂移
- */
-static boot_mode_t BootSm_ModeFromState(boot_state_t state)
-{
-    switch (state)
-    {
-		case BOOT_STATE_PROGRAMMING:
-		case BOOT_STATE_VERIFY_APP:
-			return BOOT_MODE_UPDATE;
-		case BOOT_STATE_WAIT_UPDATE:
-			return BOOT_MODE_RECOVERY;
-		case BOOT_STATE_ERROR:
-			return BOOT_MODE_ERROR;
-		case BOOT_STATE_CHECK_FLAG:
-		case BOOT_STATE_CHECK_APP:
-		case BOOT_STATE_JUMP_APP:
-		default:
-			return BOOT_MODE_NORMAL;
-    }
-}
+#include "uds_port.h"
 
 /*
  * 函数名称: BootSm_WaitTimeout
@@ -63,20 +17,38 @@ static uint32_bl BootSm_WaitTimeout(const boot_context_t *ctx)
     return (ctx->wait_tick >= ctx->wait_timeout_tick) ? BOOT_FLAG_SET_VALUE : BOOT_FLAG_CLEAR_VALUE;
 }
 
+static boot_event_t BootSm_ActionCheckRecovery(boot_context_t *ctx)
+{
+	uint8_bl ret = UDS_GetRecoveryFlag();
+
+	ctx->wait_tick++;
+    if ((BOOT_RECOVERY_NO_VALUE == ret) &&
+    	(BootSm_WaitTimeout(ctx) == BOOT_FLAG_SET_VALUE))
+    {
+        return BOOT_EVT_WAIT_TIMEOUT;
+    }
+    if (BOOT_RECOVERY_YES_VALUE == ret)
+    {
+    	return BOOT_EVT_RECOVERY_YES;
+    }
+
+    return BOOT_EVT_NONE;
+}
+
 static boot_event_t BootSm_ActionCheckFlag(boot_context_t *ctx)
 {
-    ctx->update_flag = BOOT_PortReadUpdateFlag();
+    ctx->update_flag = BSM_ReadUpdateFlag();
     return (ctx->update_flag == BOOT_FLAG_SET_VALUE) ? BOOT_EVT_FLAG_SET : BOOT_EVT_FLAG_CLEAR;
 }
 
 static boot_event_t BootSm_ActionCheckApp(boot_context_t *ctx)
 {
-    if (BOOT_PortAppExist() == BOOT_APP_INVALID_VALUE)
+    if (BSM_AppExist() == BOOT_APP_INVALID_VALUE)
     {
         return BOOT_EVT_APP_NOT_EXIST;
     }
 
-    if (BOOT_PortAppValid() == BOOT_APP_INVALID_VALUE)
+    if (BSM_AppValid() == BOOT_APP_INVALID_VALUE)
     {
         return BOOT_EVT_APP_INVALID;
     }
@@ -87,16 +59,9 @@ static boot_event_t BootSm_ActionCheckApp(boot_context_t *ctx)
 
 static boot_event_t BootSm_ActionWaitUpdate(boot_context_t *ctx)
 {
-    ctx->wait_tick++;
-    if (BOOT_PortPollUpdateReq() == BOOT_PORT_UDS_UPDATE_REQUEST)
+    if (BSM_PollUpdateReq() == BSM_UDS_UPDATE_REQUEST)
     {
         return BOOT_EVT_UPDATE_REQUEST;
-    }
-
-    if ((ctx->app_valid == BOOT_APP_VALID_VALUE) &&
-    	(BootSm_WaitTimeout(ctx) == BOOT_FLAG_SET_VALUE))
-    {
-        return BOOT_EVT_WAIT_TIMEOUT;
     }
 
     return BOOT_EVT_NONE;
@@ -104,15 +69,15 @@ static boot_event_t BootSm_ActionWaitUpdate(boot_context_t *ctx)
 
 static boot_event_t BootSm_ActionProgramming(boot_context_t *ctx)
 {
-	BootPortUdsRetE ret;
+	BsmUdsRetE ret;
 
-    ret = BOOT_PortProgramProcess();
-    if (ret == BOOT_PORT_UDS_PROGRAM_DONE)
+    ret = BSM_ProgramProcess();
+    if (ret == BSM_UDS_PROGRAM_DONE)
     {
         return BOOT_EVT_PROGRAM_DONE;
     }
 
-    if (ret == BOOT_PORT_UDS_PROGRAM_FAIL)
+    if (ret == BSM_UDS_PROGRAM_FAIL)
     {
         ctx->error_code = BOOT_ERROR_PROGRAM_FAILED;
         return BOOT_EVT_PROGRAM_FAIL;
@@ -123,9 +88,9 @@ static boot_event_t BootSm_ActionProgramming(boot_context_t *ctx)
 
 static boot_event_t BootSm_ActionVerifyApp(boot_context_t *ctx)
 {
-    if (BOOT_PortAppValid() != BOOT_APP_INVALID_VALUE)
+    if (BSM_AppValid() != BOOT_APP_INVALID_VALUE)
     {
-        if (BOOT_PortClearUpdateFlag() != BOOT_FLAG_CLEAR_VALUE)
+        if (BSM_ClearUpdateFlag() != BOOT_FLAG_CLEAR_VALUE)
         {
             ctx->error_code = BOOT_ERROR_CLEAR_FLAG_FAILED;
         }
@@ -139,7 +104,7 @@ static boot_event_t BootSm_ActionVerifyApp(boot_context_t *ctx)
 
 static boot_event_t BootSm_ActionJumpApp(boot_context_t *ctx)
 {
-	BOOT_PortJumpToApp();
+	BSM_JumpToApp();
     ctx->error_code = BOOT_ERROR_JUMP_RETURNED;
     return BOOT_EVT_JUMP_FAIL;
 }
@@ -147,7 +112,7 @@ static boot_event_t BootSm_ActionJumpApp(boot_context_t *ctx)
 static boot_event_t BootSm_ActionError(boot_context_t *ctx)
 {
     (void)ctx;
-    if (BOOT_PortPollUpdateReq() == BOOT_PORT_UDS_UPDATE_REQUEST)
+    if (BSM_PollUpdateReq() == BSM_UDS_UPDATE_REQUEST)
     {
         return BOOT_EVT_UPDATE_REQUEST;
     }
@@ -157,38 +122,41 @@ static boot_event_t BootSm_ActionError(boot_context_t *ctx)
 
 static const boot_state_action_entry_t g_action_table[] =
 {
-    { BOOT_STATE_CHECK_FLAG,   BootSm_ActionCheckFlag },
-    { BOOT_STATE_CHECK_APP,    BootSm_ActionCheckApp },
-    { BOOT_STATE_WAIT_UPDATE,  BootSm_ActionWaitUpdate },
-    { BOOT_STATE_PROGRAMMING,  BootSm_ActionProgramming },
-    { BOOT_STATE_VERIFY_APP,   BootSm_ActionVerifyApp },
-    { BOOT_STATE_JUMP_APP,     BootSm_ActionJumpApp },
-    { BOOT_STATE_ERROR,        BootSm_ActionError }
+	{ BOOT_STATE_CHECK_RECOVERY, BootSm_ActionCheckRecovery },
+    { BOOT_STATE_CHECK_FLAG,     BootSm_ActionCheckFlag },
+    { BOOT_STATE_CHECK_APP,      BootSm_ActionCheckApp },
+    { BOOT_STATE_WAIT_UPDATE,    BootSm_ActionWaitUpdate },
+    { BOOT_STATE_PROGRAMMING,    BootSm_ActionProgramming },
+    { BOOT_STATE_VERIFY_APP,     BootSm_ActionVerifyApp },
+    { BOOT_STATE_JUMP_APP,       BootSm_ActionJumpApp },
+    { BOOT_STATE_ERROR,          BootSm_ActionError }
 };
 #define BOOT_ACTION_TABLE_SIZE ((uint32_bl)(sizeof(g_action_table) / sizeof(g_action_table[0])))
 
 static const boot_transition_t g_transition_table[] =
 {
-    { BOOT_STATE_CHECK_FLAG,  BOOT_EVT_FLAG_SET,       BOOT_STATE_WAIT_UPDATE },
-    { BOOT_STATE_CHECK_FLAG,  BOOT_EVT_FLAG_CLEAR,     BOOT_STATE_CHECK_APP },
+	{ BOOT_STATE_CHECK_RECOVERY,  BOOT_EVT_RECOVERY_YES,   BOOT_STATE_PROGRAMMING },
+	{ BOOT_STATE_CHECK_RECOVERY,  BOOT_EVT_WAIT_TIMEOUT,   BOOT_STATE_CHECK_FLAG },
 
-    { BOOT_STATE_CHECK_APP,   BOOT_EVT_APP_VALID,      BOOT_STATE_WAIT_UPDATE },
-    { BOOT_STATE_CHECK_APP,   BOOT_EVT_APP_INVALID,    BOOT_STATE_WAIT_UPDATE },
-    { BOOT_STATE_CHECK_APP,   BOOT_EVT_APP_NOT_EXIST,  BOOT_STATE_WAIT_UPDATE },
+    { BOOT_STATE_CHECK_FLAG,      BOOT_EVT_FLAG_SET,       BOOT_STATE_WAIT_UPDATE },
+    { BOOT_STATE_CHECK_FLAG,      BOOT_EVT_FLAG_CLEAR,     BOOT_STATE_CHECK_APP },
 
-    { BOOT_STATE_WAIT_UPDATE, BOOT_EVT_UPDATE_REQUEST, BOOT_STATE_PROGRAMMING },
-    { BOOT_STATE_WAIT_UPDATE, BOOT_EVT_WAIT_TIMEOUT,   BOOT_STATE_JUMP_APP },
+    { BOOT_STATE_CHECK_APP,       BOOT_EVT_APP_VALID,      BOOT_STATE_JUMP_APP },
+    { BOOT_STATE_CHECK_APP,       BOOT_EVT_APP_INVALID,    BOOT_STATE_WAIT_UPDATE },
+    { BOOT_STATE_CHECK_APP,       BOOT_EVT_APP_NOT_EXIST,  BOOT_STATE_WAIT_UPDATE },
 
-    { BOOT_STATE_PROGRAMMING, BOOT_EVT_PROGRAM_DONE,   BOOT_STATE_VERIFY_APP },
-    { BOOT_STATE_PROGRAMMING, BOOT_EVT_PROGRAM_FAIL,   BOOT_STATE_WAIT_UPDATE },
+    { BOOT_STATE_WAIT_UPDATE,     BOOT_EVT_UPDATE_REQUEST, BOOT_STATE_PROGRAMMING },
 
-    { BOOT_STATE_VERIFY_APP,  BOOT_EVT_VERIFY_OK,      BOOT_STATE_JUMP_APP },
-    { BOOT_STATE_VERIFY_APP,  BOOT_EVT_VERIFY_FAIL,    BOOT_STATE_WAIT_UPDATE },
+    { BOOT_STATE_PROGRAMMING,     BOOT_EVT_PROGRAM_DONE,   BOOT_STATE_VERIFY_APP },
+    { BOOT_STATE_PROGRAMMING,     BOOT_EVT_PROGRAM_FAIL,   BOOT_STATE_WAIT_UPDATE },
 
-    { BOOT_STATE_JUMP_APP,    BOOT_EVT_JUMP_FAIL,      BOOT_STATE_WAIT_UPDATE },
+    { BOOT_STATE_VERIFY_APP,      BOOT_EVT_VERIFY_OK,      BOOT_STATE_JUMP_APP },
+    { BOOT_STATE_VERIFY_APP,      BOOT_EVT_VERIFY_FAIL,    BOOT_STATE_WAIT_UPDATE },
 
-    { BOOT_STATE_ERROR,       BOOT_EVT_UPDATE_REQUEST, BOOT_STATE_PROGRAMMING },
-    { BOOT_STATE_ERROR,       BOOT_EVT_ERROR,          BOOT_STATE_ERROR }
+    { BOOT_STATE_JUMP_APP,        BOOT_EVT_JUMP_FAIL,      BOOT_STATE_WAIT_UPDATE },
+
+    { BOOT_STATE_ERROR,           BOOT_EVT_UPDATE_REQUEST, BOOT_STATE_PROGRAMMING },
+    { BOOT_STATE_ERROR,           BOOT_EVT_ERROR,          BOOT_STATE_ERROR }
 };
 #define BOOT_TRANSITION_TABLE_SIZE ((uint32_bl)(sizeof(g_transition_table) / sizeof(g_transition_table[0])))
 
@@ -221,21 +189,20 @@ static bool_bl BootSm_FindNextState(boot_state_t state, boot_event_t event, boot
 }
 
 /*
- * 函数名称: BootSm_Init
+ * 函数名称: BSM_Init
  * 功能说明: 初始化状态机上下文
  * 输入参数: ctx - 状态机上下文指针
  * 输出参数: ctx - 初始化后的上下文
  * 返回值: 无
  */
-void BootSm_Init(boot_context_t *ctx)
+void BSM_Init(boot_context_t *ctx)
 {
     if (ctx == (boot_context_t *)0)
     {
         return;
     }
 
-    ctx->state = BOOT_STATE_CHECK_FLAG;
-    ctx->mode = BootSm_ModeFromState(ctx->state);
+    ctx->state = BOOT_STATE_CHECK_RECOVERY;
     ctx->error_code = BOOT_ERROR_NONE;
     ctx->update_flag = BOOT_FLAG_CLEAR_VALUE;
     ctx->app_valid = BOOT_APP_INVALID_VALUE;
@@ -244,13 +211,13 @@ void BootSm_Init(boot_context_t *ctx)
 }
 
 /*
- * 函数名称: BootSm_RunStep
+ * 函数名称: BSM_RunStep
  * 功能说明: 执行一次状态机步进
  * 输入参数: ctx - 状态机上下文指针
  * 输出参数: ctx - 可能被更新的上下文
  * 返回值: 无
  */
-void BootSm_RunStep(boot_context_t *ctx)
+void BSM_RunStep(boot_context_t *ctx)
 {
     boot_state_action_t action;
     boot_event_t event;
@@ -266,7 +233,6 @@ void BootSm_RunStep(boot_context_t *ctx)
     {
         ctx->error_code = BOOT_ERROR_ACTION_NOT_FOUND;
         ctx->state = BOOT_STATE_ERROR;
-        ctx->mode = BootSm_ModeFromState(ctx->state);
         return;
     }
 
@@ -279,11 +245,9 @@ void BootSm_RunStep(boot_context_t *ctx)
     if (BootSm_FindNextState(ctx->state, event, &next_state))
     {
         ctx->state = next_state;
-        ctx->mode = BootSm_ModeFromState(ctx->state);
         return;
     }
 
     ctx->error_code = BOOT_ERROR_TRANSITION_NOT_FOUND;
     ctx->state = BOOT_STATE_ERROR;
-    ctx->mode = BootSm_ModeFromState(ctx->state);
 }

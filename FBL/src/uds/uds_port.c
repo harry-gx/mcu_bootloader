@@ -6,8 +6,8 @@
 * 修改记录:
 ******************************************************************************/
 
+#include <string.h>
 #include "uds_port.h"
-
 #include "SID10_SessionControl.h"
 #include "bsm_cfg.h"
 #include "uds.h"
@@ -17,12 +17,14 @@
 
 static volatile uint8_bl updateRequestFlag = 0u;
 static volatile uint8_bl udsProgramResultFlag = UDS_PROGRAM_RESULT_IDLE;
-static uint8_bl udsHeaderPrefix[UDS_HEADER_PREFIX_SIZE];
 static volatile uint8_bl udsHeaderPrefixValid = 0u;
 static volatile uint32_bl mainLoopCnt = 0u;
+static uint8_bl udsHeaderPrefix[UDS_HEADER_PREFIX_SIZE];
+static uint8_bl recoveryData[CAN_MSG_LENGTH] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+static uint8_bl recoveryFlag = 0;
 
 /******************************************************************************
-* 函数名称: void uds_recv_frame(uint32_bl id, uint8_bl* frame_buf, uint8_bl frame_dlc)
+* 函数名称: void UDS_RecvFrame(uint32_bl id, uint8_bl* frame_buf, uint8_bl frame_dlc)
 * 功能说明: 接收到一帧报文
 * 输入参数: uint32_bl    id              --消息帧 ID
     　　　　uint8_bl*    frame_buf       --接收报文帧数据首地址
@@ -31,12 +33,21 @@ static volatile uint32_bl mainLoopCnt = 0u;
 * 函数返回: 无
 * 其它说明: frame_dlc 长度必须等于 FRAME_SIZE，否则会被判断为无效帧
 ******************************************************************************/
-void uds_recv_frame(void)
+void UDS_RecvFrame(void)
 {
 	static McalCanPduType_t pdu;
 	int32_bl ret = IF_CanRead(&pdu);
 	if (FBL_OK == ret)
 	{
+    	/* 检查是否进入强刷状态 */
+    	if ((8U == pdu.dlc) &&
+			(0U == memcmp(recoveryData, pdu.data, pdu.dlc)))
+    	{
+    		recoveryFlag = 1U;
+    		return;
+    	}
+
+    	recoveryFlag = 0U;
 	    if (REQUEST_ID == pdu.canId)
 	    {
 	        uds_tp_recv_frame(0, pdu.data, pdu.dlc);
@@ -76,14 +87,14 @@ void uds_send_frame(uint32_bl response_id, uint8_bl *frame_buf, uint8_bl frame_d
 
 
 /******************************************************************************
-* 函数名称: void uds_init(void)
+* 函数名称: void UDS_Init(void)
 * 功能说明: UDS 初始化
 * 输入参数: 无
 * 输出参数: 无
 * 函数返回: 无
 * 其它说明: 无
 ******************************************************************************/
-void uds_init(void)
+void UDS_Init(void)
 {
     service_init();
     set_current_session(UDS_SESSION_PROG);
@@ -98,10 +109,15 @@ void uds_init(void)
 * 函数返回: 无
 * 其它说明: 该函数需要被 1ms 周期调用
 ******************************************************************************/
-void uds_1ms_task(void)
+void UDS_1MsTask(void)
 {
     network_task();
     service_task();
+}
+
+uint8_bl UDS_GetRecoveryFlag(void)
+{
+    return recoveryFlag;
 }
 
 uint32_bl GetMainLoopCnt(void)
@@ -109,7 +125,7 @@ uint32_bl GetMainLoopCnt(void)
     return mainLoopCnt;
 }
 
-void OnceMainLoopCnt(void)
+void UDS_MainLoopCnt(void)
 {
     mainLoopCnt++;
 }

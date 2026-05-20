@@ -10,6 +10,9 @@
 #include "std_type.h"
 
 /* ==================== 通用标记定义 ==================== */
+#define BOOT_RECOVERY_NO_VALUE                (0u)
+#define BOOT_RECOVERY_YES_VALUE               (1u)
+
 #define BOOT_FLAG_CLEAR_VALUE                 (0u)
 #define BOOT_FLAG_SET_VALUE                   (1u)
 
@@ -17,7 +20,7 @@
 #define BOOT_APP_VALID_VALUE                  (1u)
 
 /* ==================== Boot 行为配置 ==================== */
-#define BOOT_WAIT_TIMEOUT_TICK_DEFAULT        (1000u)
+#define BOOT_WAIT_TIMEOUT_TICK_DEFAULT        (6000u)
 
 /* ==================== 错误码配置 ==================== */
 #define BOOT_ERROR_NONE                       (0u)

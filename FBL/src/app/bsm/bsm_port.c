@@ -91,13 +91,13 @@ static uint32_bl CalcImageCrc(const uint8_bl *imageStart, uint32_bl imageLen)
 }
 
 /*
- * 函数名称: BOOT_PortTake1msTick
+ * 函数名称: BSM_Take1msTick
  * 功能说明: 读取并清除 LPIT 1ms 标志
  * 输入参数: 无
  * 输出参数: 无
  * 返回值: TRUE=有tick, FALSE=无tick
  */
-bool_bl BOOT_PortTake1msTick(void)
+bool_bl BSM_Take1msTick(void)
 {
     if (TRUE == IF_LpitGet1MsFlag())
     {
@@ -109,26 +109,26 @@ bool_bl BOOT_PortTake1msTick(void)
 }
 
 /*
- * 函数名称: BOOT_PortReadUpdateFlag
+ * 函数名称: BSM_ReadUpdateFlag
  * 功能说明: 读取升级标志
  * 输入参数: 无
  * 输出参数: 无
  * 返回值: 1=已置位，0=未置位
  */
-uint8_bl BOOT_PortReadUpdateFlag(void)
+uint8_bl BSM_ReadUpdateFlag(void)
 {
     const BootUpdateFlagU *p = (const BootUpdateFlagU *)BOOT_UPDATE_FLAG_ADDR;
     return (p->updateFlag == BOOT_UPDATE_FLAG_VALUE) ? BOOT_FLAG_SET_VALUE : BOOT_FLAG_CLEAR_VALUE;
 }
 
 /*
- * 函数名称: BOOT_PortClearUpdateFlag
+ * 函数名称: BSM_ClearUpdateFlag
  * 功能说明: 清除升级标志
  * 输入参数: 无
  * 输出参数: 无
  * 返回值: 清除后标志状态（1=仍置位，0=已清除）
  */
-uint8_bl BOOT_PortClearUpdateFlag(void)
+uint8_bl BSM_ClearUpdateFlag(void)
 {
     BootUpdateFlagU clearFlag = {0};
     int32_bl writeOk;
@@ -151,13 +151,13 @@ uint8_bl BOOT_PortClearUpdateFlag(void)
     eraseOk = IF_FlsErase(BOOT_UPDATE_FLAG_ADDR, BOOT_UPDATE_FLAG_ERASE_SIZE);
     if (FBL_OK != eraseOk)
     {
-        return BOOT_PortReadUpdateFlag();
+        return BSM_ReadUpdateFlag();
     }
 
     writeOk = IF_FlsWrite(BOOT_UPDATE_FLAG_ADDR,
     					 (uint32_bl)sizeof(clearFlag.updateFlagArr),
 						  clearFlag.updateFlagArr);
-    flagNow = BOOT_PortReadUpdateFlag();
+    flagNow = BSM_ReadUpdateFlag();
 
     if ((FBL_OK != writeOk) && (BOOT_FLAG_SET_VALUE == flagNow))
     {
@@ -168,32 +168,32 @@ uint8_bl BOOT_PortClearUpdateFlag(void)
 }
 
 /*
- * 函数名称: BOOT_PortAppExist
+ * 函数名称: BSM_AppExist
  * 功能说明: 判断 APP 是否存在（通过 magic）
  * 输入参数: 无
  * 输出参数: 无
  * 返回值: 1=存在，0=不存在
  */
-uint8_bl BOOT_PortAppExist(void)
+uint8_bl BSM_AppExist(void)
 {
     const BootAppHeader *hdr = GetAppHeader();
     return (hdr->magic == BOOT_APP_MAGIC) ? BOOT_APP_VALID_VALUE : BOOT_APP_INVALID_VALUE;
 }
 
 /*
- * 函数名称: BOOT_PortAppValid
+ * 函数名称: BSM_AppValid
  * 功能说明: 判断 APP 是否有效（magic/长度边界/CRC）
  * 输入参数: 无
  * 输出参数: 无
  * 返回值: 1=有效，0=无效
  */
-uint8_bl BOOT_PortAppValid(void)
+uint8_bl BSM_AppValid(void)
 {
     const BootAppHeader *hdr = GetAppHeader();
     uint32_bl imageEnd;
     uint32_bl crc;
 
-    if (BOOT_PortAppExist() == BOOT_APP_INVALID_VALUE)
+    if (BSM_AppExist() == BOOT_APP_INVALID_VALUE)
     {
         return BOOT_APP_INVALID_VALUE;
     }
@@ -224,57 +224,57 @@ uint8_bl BOOT_PortAppValid(void)
 }
 
 /*
- * 函数名称: BOOT_PortPollUpdateReq
+ * 函数名称: BSM_PollUpdateReq
  * 功能说明: 轮询是否收到升级请求
  * 输入参数: 无
  * 输出参数: 无
  * 返回值: UDS 状态码
  */
-BootPortUdsRetE BOOT_PortPollUpdateReq(void)
+BsmUdsRetE BSM_PollUpdateReq(void)
 {
 	if (1 == GetUpdateRequestFlag())
 	{
 		SetUpdateRequestFlag(0);
-		return BOOT_PORT_UDS_UPDATE_REQUEST;
+		return BSM_UDS_UPDATE_REQUEST;
 	}
 
-    return BOOT_PORT_UDS_IDLE;
+    return BSM_UDS_IDLE;
 }
 
 /*
- * 函数名称: BOOT_PortProgramProcess
+ * 函数名称: BSM_ProgramProcess
  * 功能说明: 执行升级过程处理
  * 输入参数: 无
  * 输出参数: 无
  * 返回值: UDS 状态码
  */
-BootPortUdsRetE BOOT_PortProgramProcess(void)
+BsmUdsRetE BSM_ProgramProcess(void)
 {
     uint8_bl result = GetUdsProgramResult();
 
     if (result == UDS_PROGRAM_RESULT_DONE)
     {
     	SetUdsProgramResult(UDS_PROGRAM_RESULT_IDLE);
-        return BOOT_PORT_UDS_PROGRAM_DONE;
+        return BSM_UDS_PROGRAM_DONE;
     }
 
     if (result == UDS_PROGRAM_RESULT_FAIL)
     {
     	SetUdsProgramResult(UDS_PROGRAM_RESULT_IDLE);
-        return BOOT_PORT_UDS_PROGRAM_FAIL;
+        return BSM_UDS_PROGRAM_FAIL;
     }
 
-    return BOOT_PORT_UDS_IDLE;
+    return BSM_UDS_IDLE;
 }
 
 /*
- * 函数名称: BOOT_PortJumpToApp
+ * 函数名称: BSM_JumpToApp
  * 功能说明: 标准 Cortex-M 跳转 APP
  * 输入参数: 无
  * 输出参数: 无
  * 返回值: 无（成功通常不返回）
  */
-void BOOT_PortJumpToApp(void)
+void BSM_JumpToApp(void)
 {
     typedef void (*app_entry_t)(void);
 
