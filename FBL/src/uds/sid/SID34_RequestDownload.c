@@ -7,13 +7,18 @@
 ******************************************************************************/
 
 #include "uds_cfg.h"
+#include "fbl_cfg.h"
 #include "SID34_RequestDownload.h"
 #include "uds.h"
 #include "uds_port.h"
 
 // 36 服务数据传输报文总大小
-#define TOTAL_LEN_36	(512 + 2)
+#define TOTAL_LEN_36 (BOOT_WRITE_BLOCK_SIZE + 2)
 
+extern uint8_bl diag_tansf_data_block_cnt;
+extern uint32_bl boot_wstart_address;
+extern uint32_bl write_address_offset;
+extern uint32_bl write_length_once;
 
 /******************************************************************************
 * 函数名称: bool_bl service_34_check_len(const uint8_bl* msg_buf, uint16_bl msg_dlc)
@@ -48,7 +53,11 @@ void service_34_RequestDownload(const uint8_bl* msg_buf, uint16_bl msg_dlc)
 
 	SetUpdateRequestFlag(1);
 	SetUdsProgramResult(UDS_PROGRAM_RESULT_IDLE);
-	ClearUdsHeaderPrefix();
+
+	diag_tansf_data_block_cnt = 1;
+	boot_wstart_address = 0u;
+	write_address_offset = 0u;
+	write_length_once = 0u;
 
 	// 这里需要解析 34 服务报文
 

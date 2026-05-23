@@ -9,7 +9,7 @@
 #include <string.h>
 #include "uds_port.h"
 #include "SID10_SessionControl.h"
-#include "bsm_cfg.h"
+#include "fbl_cfg.h"
 #include "uds.h"
 #include "can_tp.h"
 #include "can_if.h"
@@ -19,7 +19,6 @@ static volatile uint8_bl updateRequestFlag = 0u;
 static volatile uint8_bl udsProgramResultFlag = UDS_PROGRAM_RESULT_IDLE;
 static volatile uint8_bl udsHeaderPrefixValid = 0u;
 static volatile uint32_bl mainLoopCnt = 0u;
-static uint8_bl udsHeaderPrefix[UDS_HEADER_PREFIX_SIZE];
 static uint8_bl recoveryData[CAN_MSG_LENGTH] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
 static uint8_bl recoveryFlag = 0;
 
@@ -150,44 +149,6 @@ uint8_bl GetUdsProgramResult(void)
     return udsProgramResultFlag;
 }
 
-void ClearUdsHeaderPrefix(void)
-{
-    udsHeaderPrefixValid = 0u;
-}
-
-void StoreUdsHeaderPrefix(const uint8_bl *data, uint32_bl len)
-{
-    uint32_bl i;
-
-    if ((data == (const uint8_bl *)0) || (len < UDS_HEADER_PREFIX_SIZE))
-    {
-        return;
-    }
-
-    for (i = 0u; i < UDS_HEADER_PREFIX_SIZE; i++)
-    {
-        udsHeaderPrefix[i] = data[i];
-    }
-    udsHeaderPrefixValid = 1u;
-}
-
-uint8_bl LoadUdsHeaderPrefix(uint8_bl *out, uint32_bl len)
-{
-    uint32_bl i;
-
-    if ((out == (uint8_bl *)0) || (len < UDS_HEADER_PREFIX_SIZE) || (udsHeaderPrefixValid == 0u))
-    {
-        return 0u;
-    }
-
-    for (i = 0u; i < UDS_HEADER_PREFIX_SIZE; i++)
-    {
-        out[i] = udsHeaderPrefix[i];
-    }
-
-    return 1u;
-}
-
 uint32_bl UdsPort_GetAppStartAddr(void)
 {
     return BOOT_APP_START_ADDR;
@@ -206,26 +167,4 @@ int32_bl UdsPort_WriteAppFlash(uint32_bl addr, uint32_bl len, const uint8_bl *da
     }
 
     return IF_FlsWrite(addr, len, data);
-}
-
-uint8_bl UdsPort_CheckFlashProgramCompatible(uint32_bl addr, const uint8_bl *data, uint32_bl len)
-{
-    const uint8_bl *current_ptr;
-    uint32_bl i;
-
-    if ((data == (const uint8_bl *)0) || (len == 0u))
-    {
-        return 0u;
-    }
-
-    current_ptr = (const uint8_bl *)addr;
-    for (i = 0u; i < len; i++)
-    {
-        if (((uint8_bl)(data[i] & (uint8_bl)(~current_ptr[i]))) != 0u)
-        {
-            return 0u;
-        }
-    }
-
-    return 1u;
 }

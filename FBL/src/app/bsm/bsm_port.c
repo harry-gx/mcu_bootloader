@@ -7,11 +7,12 @@
  */
 
 #include "bsm_port.h"
-#include "bsm_cfg.h"
+#include "fbl_cfg.h"
 #include "uds_port.h"
 #include "device_registers.h"
 #include "lpit_if.h"
 #include "fls_if.h"
+#include "crc32.h"
 
 /*
  * 结构体名称: BootUpdateFlagU
@@ -33,61 +34,6 @@ typedef union __BootUpdateFlagU
 static const BootAppHeader *GetAppHeader(void)
 {
     return (const BootAppHeader *)BOOT_APP_START_ADDR;
-}
-
-/*
- * 函数名称: Crc32UpdateByte
- * 功能说明: CRC32 单字节滚动更新（多项式 0xEDB88320）
- */
-static uint32_bl Crc32UpdateByte(uint32_bl crc, uint8_bl byte)
-{
-    uint8_bl j;
-
-    crc ^= byte;
-    for (j = 0u; j < 8u; j++)
-    {
-        if ((crc & 1u) != 0u)
-        {
-            crc = (crc >> 1u) ^ 0xEDB88320u;
-        }
-        else
-        {
-            crc >>= 1u;
-        }
-    }
-
-    return crc;
-}
-
-/*
- * 函数名称: CalcImageCrc
- * 功能说明: 按升级流程计算镜像 CRC（长度/CRC 字段按 0xFF 参与计算）
- * 说明:
- * 1) 上位机生成 CRC 时，固件头 length/crc 字段仍为 0xFFFFFFFF。
- * 2) 因此校验时需“逻辑替换”为 0xFF，而不是改写 Flash 再计算。
- */
-static uint32_bl CalcImageCrc(const uint8_bl *imageStart, uint32_bl imageLen)
-{
-    if (imageStart == (const uint8_bl *)0)
-    {
-        return 0u;
-    }
-
-    uint32_bl crc = 0xFFFFFFFFu;
-    uint32_bl i;
-    for (i = 0u; i < imageLen; i++)
-    {
-        uint8_bl byte = imageStart[i];
-
-        if ((i >= 4u) && (i < 12u))
-        {
-            byte = 0xFFu;
-        }
-
-        crc = Crc32UpdateByte(crc, byte);
-    }
-
-    return crc ^ 0xFFFFFFFFu;
 }
 
 /*
@@ -135,19 +81,6 @@ uint8_bl BSM_ClearUpdateFlag(void)
     int32_bl eraseOk;
     uint8_bl flagNow;
 
-//    /*
-//     * 先尝试直接把 8 字节标志区写 0（仅 1->0，不增加擦写次数）。
-//     * 若仍未清掉，再回退到“擦除 + 写0”兜底。
-//     */
-//    writeOk = HAL_FlashWrite(BOOT_UPDATE_FLAG_ADDR,
-//                              (uint32_bl)sizeof(clearFlag.updateFlagArr),
-//                              clearFlag.updateFlagArr);
-//    flagNow = BootPort_ReadUpdateFlag();
-//    if ((writeOk != 0u) && (flagNow == BOOT_FLAG_CLEAR_VALUE))
-//    {
-//        return BOOT_FLAG_CLEAR_VALUE;
-//    }
-
     eraseOk = IF_FlsErase(BOOT_UPDATE_FLAG_ADDR, BOOT_UPDATE_FLAG_ERASE_SIZE);
     if (FBL_OK != eraseOk)
     {
@@ -191,7 +124,6 @@ uint8_bl BSM_AppValid(void)
 {
     const BootAppHeader *hdr = GetAppHeader();
     uint32_bl imageEnd;
-    uint32_bl crc;
 
     if (BSM_AppExist() == BOOT_APP_INVALID_VALUE)
     {
@@ -214,7 +146,9 @@ uint8_bl BSM_AppValid(void)
         return BOOT_APP_INVALID_VALUE;
     }
 
-    crc = CalcImageCrc((const uint8_bl *)BOOT_APP_START_ADDR, hdr->length);
+    uint32_bl crc = CRC_CalcImageCrc(0xFFFFFFFFu,
+								    (const uint8_bl *)BOOT_APP_START_ADDR,
+								    hdr->length);
     if (crc == hdr->crc32)
     {
     	return BOOT_APP_VALID_VALUE;

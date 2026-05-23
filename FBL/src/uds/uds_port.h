@@ -78,7 +78,6 @@ void UDS_MainLoopCnt(void);
 #define UDS_PROGRAM_RESULT_IDLE   (0u)
 #define UDS_PROGRAM_RESULT_DONE   (1u)
 #define UDS_PROGRAM_RESULT_FAIL   (2u)
-#define UDS_HEADER_PREFIX_SIZE    (16u)
 
 void SetUpdateRequestFlag(uint8_bl flag);
 uint8_bl GetUpdateRequestFlag(void);
@@ -86,14 +85,9 @@ uint8_bl GetUpdateRequestFlag(void);
 void SetUdsProgramResult(uint8_bl result);
 uint8_bl GetUdsProgramResult(void);
 
-void ClearUdsHeaderPrefix(void);
-void StoreUdsHeaderPrefix(const uint8_bl *data, uint32_bl len);
-uint8_bl LoadUdsHeaderPrefix(uint8_bl *out, uint32_bl len);
-
 uint32_bl UdsPort_GetAppStartAddr(void);
 int32_bl UdsPort_EraseAppImage(void);
 int32_bl UdsPort_WriteAppFlash(uint32_bl addr, uint32_bl len, const uint8_bl *data);
-uint8_bl UdsPort_CheckFlashProgramCompatible(uint32_bl addr, const uint8_bl *data, uint32_bl len);
 
 #endif
 

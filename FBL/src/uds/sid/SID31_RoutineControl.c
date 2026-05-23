@@ -3,13 +3,16 @@
 * 内容摘要: 例程控制
 * 创建者の: 孔佳伟
 * 个人主页: https://gitee.com/openes
-* 修改记录: 
+* 修改记录:
 ******************************************************************************/
 
-#include "uds_cfg.h"
+#include <string.h>
 #include "SID31_RoutineControl.h"
+#include "uds_cfg.h"
+#include "fbl_cfg.h"
 #include "uds.h"
 #include "uds_port.h"
+#include "crc32.h"
 
 /*
  * 31 01 ff 00 擦除内存
@@ -20,7 +23,6 @@
  * 31 01 02 04 数字签名
 */
 
-
 typedef enum __UDS_ROUTINE_CTRL_TYPE__
 {
 	UDS_ROUTINE_CTRL_NONE = 0,
@@ -28,7 +30,6 @@ typedef enum __UDS_ROUTINE_CTRL_TYPE__
 	UDS_ROUTINE_CTRL_STOP = 0x02,
 	UDS_ROUTINE_CTRL_REQUEST_RESULT = 0x03
 }uds_routine_ctrl_type;
-
 
 /******************************************************************************
 * 函数名称: bool_t service_31_check_len(const uint8_t* msg_buf, uint16_t msg_dlc)
@@ -51,7 +52,6 @@ bool_bl service_31_check_len(const uint8_bl* msg_buf, uint16_bl msg_dlc)
 	return ret;
 }
 
-
 /******************************************************************************
 * 函数名称: void service_31_RoutineControl(const uint8_t* msg_buf, uint16_t msg_dlc)
 * 功能说明: 31 服务 - 例程控制
@@ -69,6 +69,7 @@ void service_31_RoutineControl(const uint8_bl* msg_buf, uint16_bl msg_dlc)
 
 	if (msg_dlc < 4u)
 	{
+		SetUdsProgramResult(UDS_PROGRAM_RESULT_FAIL);
 		uds_negative_rsp(SID_31, NRC_INVALID_MESSAGE_LENGTH_OR_FORMAT);
 		return;
 	}
@@ -87,12 +88,6 @@ void service_31_RoutineControl(const uint8_bl* msg_buf, uint16_bl msg_dlc)
 		case UDS_ROUTINE_CTRL_START: // 01
 			if(0xFF00 == rid) // 擦除 Flash
 			{
-				if (msg_dlc < 12u)
-				{
-					uds_negative_rsp(SID_31, NRC_INVALID_MESSAGE_LENGTH_OR_FORMAT);
-					return;
-				}
-
 				uint8_bl eraseOk = UdsPort_EraseAppImage();
 				if (0u != eraseOk)
 				{
@@ -100,88 +95,52 @@ void service_31_RoutineControl(const uint8_bl* msg_buf, uint16_bl msg_dlc)
 					uds_negative_rsp(SID_31, NRC_GENERAL_PROGRAMMING_FAILURE);
 					return;
 				}
+				else
+				{
+					SetUdsProgramResult(UDS_PROGRAM_RESULT_DONE);
+					uds_positive_rsp(rsp_buf, 4);
+				}
 			}
+
 			if(0xFF01 == rid) // CRC 校验
 			{
-				uint8_bl len_buf[4];
-				uint8_bl crc_buf[4];
-				uint8_bl header_prefix[UDS_HEADER_PREFIX_SIZE];
-				uint8_bl phrase0_buf[8];
-				uint8_bl phrase1_buf[8];
-				uint8_bl i;
-				uint8_bl wr_len_ok;
-				uint8_bl wr_crc_ok;
-				uint32_bl app_start_addr;
+				uint32_bl firLen = (msg_buf[4] << 24) |
+								   (msg_buf[5] << 16) |
+								   (msg_buf[6] << 8) |
+								   (msg_buf[7]);
 
-				if (msg_dlc < 12u)
-				{
-					uds_negative_rsp(SID_31, NRC_INVALID_MESSAGE_LENGTH_OR_FORMAT);
-					return;
-				}
+				uint32_bl firCrc = (msg_buf[8] << 24) |
+								   (msg_buf[9] << 16) |
+								   (msg_buf[10] << 8) |
+								   (msg_buf[11]);
 
-				len_buf[0] = msg_buf[4];
-				len_buf[1] = msg_buf[5];
-				len_buf[2] = msg_buf[6];
-				len_buf[3] = msg_buf[7];
+			    uint32_bl crc = CRC_CalcImageCrc(0xFFFFFFFFu,
+											    (const uint8_bl *)BOOT_APP_START_ADDR,
+												firLen);
+			    if (firCrc == crc)
+			    {
+			    	/* 固件更新完成后校验通过，才保存固件长度和校验码 */
+			    	uint8_bl writeHead[16] = {0};
+			    	memcpy(writeHead, (uint8_bl *)BOOT_APP_START_ADDR, 4);
+			    	memcpy(&writeHead[4], &firLen, 4);
+			    	memcpy(&writeHead[8], &firCrc, 4);
+			    	int32_bl ret = UdsPort_WriteAppFlash(BOOT_APP_START_ADDR, 16u, (const uint8_bl *)writeHead);
+					if (FBL_OK != ret)
+					{
+				        SetUdsProgramResult(UDS_PROGRAM_RESULT_FAIL);
+				        uds_negative_rsp(SID_31, NRC_GENERAL_PROGRAMMING_FAILURE);
+						return;
+					}
 
-				crc_buf[0] = msg_buf[8];
-				crc_buf[1] = msg_buf[9];
-				crc_buf[2] = msg_buf[10];
-				crc_buf[3] = msg_buf[11];
-
-				if (LoadUdsHeaderPrefix(header_prefix, UDS_HEADER_PREFIX_SIZE) == 0u)
-				{
-					SetUdsProgramResult(UDS_PROGRAM_RESULT_FAIL);
-					uds_negative_rsp(SID_31, NRC_GENERAL_PROGRAMMING_FAILURE);
-					return;
-				}
-
-				app_start_addr = UdsPort_GetAppStartAddr();
-
-				for (i = 0u; i < 8u; i++)
-				{
-					phrase0_buf[i] = header_prefix[i];
-					phrase1_buf[i] = header_prefix[8u + i];
-				}
-
-				phrase0_buf[4] = len_buf[3];
-				phrase0_buf[5] = len_buf[2];
-				phrase0_buf[6] = len_buf[1];
-				phrase0_buf[7] = len_buf[0];
-
-				phrase1_buf[0] = crc_buf[3];
-				phrase1_buf[1] = crc_buf[2];
-				phrase1_buf[2] = crc_buf[1];
-				phrase1_buf[3] = crc_buf[0];
-
-				if (UdsPort_CheckFlashProgramCompatible(app_start_addr, phrase0_buf, 8u) == 0u)
-				{
-					SetUdsProgramResult(UDS_PROGRAM_RESULT_FAIL);
-					uds_negative_rsp(SID_31, NRC_GENERAL_PROGRAMMING_FAILURE);
-					return;
-				}
-
-				if (UdsPort_CheckFlashProgramCompatible(app_start_addr + 8u, phrase1_buf, 8u) == 0u)
-				{
-					SetUdsProgramResult(UDS_PROGRAM_RESULT_FAIL);
-					uds_negative_rsp(SID_31, NRC_GENERAL_PROGRAMMING_FAILURE);
-					return;
-				}
-
-				wr_len_ok = UdsPort_WriteAppFlash(app_start_addr, 8u, phrase0_buf);
-				wr_crc_ok = UdsPort_WriteAppFlash(app_start_addr + 8u, 8u, phrase1_buf);
-				if ((wr_len_ok != 0u) || (wr_crc_ok != 0u))
-				{
-					SetUdsProgramResult(UDS_PROGRAM_RESULT_FAIL);
-					uds_negative_rsp(SID_31, NRC_GENERAL_PROGRAMMING_FAILURE);
-					return;
-				}
-
-				SetUdsProgramResult(UDS_PROGRAM_RESULT_DONE);
-
+					SetUdsProgramResult(UDS_PROGRAM_RESULT_DONE);
+					uds_positive_rsp(rsp_buf, 4);
+			    }
+			    else
+			    {
+			    	SetUdsProgramResult(UDS_PROGRAM_RESULT_FAIL);
+			    	uds_negative_rsp(SID_31, NRC_GENERAL_PROGRAMMING_FAILURE);
+			    }
 			}
-
-			uds_positive_rsp (rsp_buf, 4);
 		    break;
 		case UDS_ROUTINE_CTRL_STOP: // 02
 		    uds_positive_rsp (rsp_buf,4);
@@ -194,6 +153,3 @@ void service_31_RoutineControl(const uint8_bl* msg_buf, uint16_bl msg_dlc)
 		    break;
 	}
 }
-
-
-/****************EOF****************/

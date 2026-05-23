@@ -36,12 +36,14 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/app&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/app/bsm&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/cfg&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/com&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/com/if&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/com/mcal&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/com/tp&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/uds&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/uds/sid&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/utils&quot;"/>
 								</option>
 								<option id="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.c.compiler.option.target.mcpu.478821840" name="ARM family" superClass="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.c.compiler.option.target.mcpu" useByScannerDiscovery="true" value="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.c.compiler.option.target.mcpu.cortex-m4" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1762421992" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
@@ -61,6 +63,8 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src\app\bsm&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/service/uds/sid&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/cfg&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/utils&quot;"/>
 								</option>
 								<option id="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.cpp.compiler.option.target.mcpu.1085653012" name="ARM family" superClass="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.cpp.compiler.option.target.mcpu" useByScannerDiscovery="true" value="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.cpp.compiler.option.target.mcpu.cortex-m4" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.939824202" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
@@ -107,6 +111,8 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src\app\bsm&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/service/uds/sid&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/cfg&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/utils&quot;"/>
 								</option>
 								<option id="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.assembler.option.target.mcpu.907311388" name="ARM family" superClass="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.assembler.option.target.mcpu" useByScannerDiscovery="true" value="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.assembler.option.target.mcpu.cortex-m4" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1578833119" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
@@ -188,6 +194,8 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src\app\bsm&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/service/uds/sid&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/cfg&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/utils&quot;"/>
 								</option>
 								<option id="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.c.compiler.option.target.mcpu.1429144129" name="ARM family" superClass="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.c.compiler.option.target.mcpu" useByScannerDiscovery="true" value="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.c.compiler.option.target.mcpu.cortex-m4" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1436453829" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
@@ -211,6 +219,8 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src\app\bsm&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/service/uds/sid&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/cfg&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/utils&quot;"/>
 								</option>
 								<option id="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.cpp.compiler.option.target.mcpu.728497343" name="ARM family" superClass="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.cpp.compiler.option.target.mcpu" useByScannerDiscovery="true" value="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.cpp.compiler.option.target.mcpu.cortex-m4" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.712000530" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
@@ -261,6 +271,8 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src\app\bsm&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/service/uds/sid&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/cfg&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/utils&quot;"/>
 								</option>
 								<option id="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.assembler.option.target.mcpu.923126074" name="ARM family" superClass="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.assembler.option.target.mcpu" value="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.assembler.option.target.mcpu.cortex-m4" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1131502950" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
@@ -340,6 +352,8 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src\app\bsm&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/service/uds/sid&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/cfg&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/utils&quot;"/>
 								</option>
 								<option id="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.c.compiler.option.target.mcpu.1354740488" name="ARM family" superClass="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.c.compiler.option.target.mcpu" useByScannerDiscovery="true" value="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.c.compiler.option.target.mcpu.cortex-m4" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.470740968" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
@@ -363,6 +377,8 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src\app\bsm&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/service/uds/sid&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/cfg&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/utils&quot;"/>
 								</option>
 								<option id="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.cpp.compiler.option.target.mcpu.207053775" name="ARM family" superClass="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.cpp.compiler.option.target.mcpu" useByScannerDiscovery="true" value="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.cpp.compiler.option.target.mcpu.cortex-m4" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.177194196" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
@@ -413,6 +429,8 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}\src\app\bsm&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/service/uds/sid&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/cfg&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/utils&quot;"/>
 								</option>
 								<option id="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.assembler.option.target.mcpu.1073153205" name="ARM family" superClass="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.assembler.option.target.mcpu" value="com.freescale.s32ds.cross.gnu.arm.cortexm.tool.assembler.option.target.mcpu.cortex-m4" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1983597506" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>

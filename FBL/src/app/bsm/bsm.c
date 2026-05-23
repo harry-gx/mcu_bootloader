@@ -4,9 +4,32 @@
  */
 
 #include "bsm.h"
-#include "bsm_cfg.h"
+#include "fbl_cfg.h"
 #include "bsm_port.h"
 #include "uds_port.h"
+
+typedef boot_event_t (*boot_state_action_t)(boot_context_t *ctx);
+
+/*
+ * 结构体名称: boot_state_action_entry_t
+ * 功能说明: 状态动作表项（state -> action）
+ */
+typedef struct
+{
+    boot_state_t state;         /* 当前状态 */
+    boot_state_action_t action; /* 对应动作函数 */
+} boot_state_action_entry_t;
+
+/*
+ * 结构体名称: boot_transition_t
+ * 功能说明: 状态转移表项（state + event -> next_state）
+ */
+typedef struct
+{
+    boot_state_t current_state; /* 当前状态 */
+    boot_event_t event;         /* 当前事件 */
+    boot_state_t next_state;    /* 下一状态 */
+} boot_transition_t;
 
 /*
  * 函数名称: BootSm_WaitTimeout

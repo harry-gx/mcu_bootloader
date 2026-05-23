@@ -21,6 +21,7 @@
 
 /* ==================== Boot 行为配置 ==================== */
 #define BOOT_WAIT_TIMEOUT_TICK_DEFAULT        (6000u)
+#define BOOT_WRITE_BLOCK_SIZE	              (512)
 
 /* ==================== 错误码配置 ==================== */
 #define BOOT_ERROR_NONE                       (0u)
